@@ -22,6 +22,14 @@ with open(fileName, 'r') as f:
                     G.add_edge(source, dest, weight=1)
                 else:
                     G[source][dest]["weight"] = G[source][dest]["weight"]+1
-print(len(G.edges()))
 
-nx.write_gml(G, 'weighted-path-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
+# filtering edges
+G_filtered = nx.DiGraph()
+for edge in G.edges():
+    if G[edge[0]][edge[1]]["weight"] > 2:
+        G_filtered.add_edge(edge[0], edge[1], weight=G[edge[0]][edge[1]]["weight"])
+
+print(len(G.edges()))
+print(len(G_filtered.edges()))
+
+nx.write_gml(G_filtered, 'edge-filter-2-weighted-network-from-monitor-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
