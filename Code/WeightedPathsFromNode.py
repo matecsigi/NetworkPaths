@@ -26,10 +26,10 @@ with open(fileName, 'r') as f:
 # filtering edges
 G_filtered = nx.DiGraph()
 for edge in G.edges():
-    if G[edge[0]][edge[1]]["weight"] > 2:
+    if G[edge[0]][edge[1]]["weight"] > 8:
         G_filtered.add_edge(edge[0], edge[1], weight=G[edge[0]][edge[1]]["weight"])
 
 print(len(G.edges()))
 print(len(G_filtered.edges()))
 
-nx.write_gml(G_filtered, 'edge-filter-2-weighted-network-from-monitor-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
+nx.write_gml(G_filtered, 'edge-filter-8-weighted-network-from-monitor-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
