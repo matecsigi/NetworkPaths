@@ -23,6 +23,7 @@ def positionFromHyperMap():
             splitLine = line.split()
             angle = float(splitLine[1])
             radius = float(splitLine[2])
+            # radius = float(1)/G.degree(splitLine[0])
             position[splitLine[0]] = (math.cos(angle*radius), math.sin(angle*radius))
     return position
 
@@ -215,7 +216,6 @@ if __name__=="__main__":
     G_diff = createDiffGraph(G, G_shortest)
     print(len(G_diff.nodes()))
     edges, weights = zip(*nx.get_edge_attributes(G_diff, 'weight').items())
-    print(weights)
     zipped = zip(weights, edges)
     zipped.sort()
     edges = [edge for (weight, edge) in zipped]
