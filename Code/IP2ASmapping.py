@@ -23,8 +23,10 @@ def positionFromHyperMap():
             splitLine = line.split()
             angle = float(splitLine[1])
             radius = float(splitLine[2])
+            x = radius*math.cos(angle)
+            y = radius*math.sin(angle)
             # radius = float(1)/G.degree(splitLine[0])
-            position[splitLine[0]] = (math.cos(angle*radius), math.sin(angle*radius))
+            position[splitLine[0]] = (x, y)
     return position
 
 def createGraph(ipDict):
