@@ -176,19 +176,18 @@ def createShortestPathGraph(G, ipDict):
 
     return G_shortest
 
-def createDiffGraph(G, G_shortest):
-    G_diff = G.copy()
+def createDiffGraphs(G, G_shortest):
+    G_diff_orig_bigger = G.copy()
     for node in G.nodes():
         for neighbor in G.neighbors(node):
-            G_diff[node][neighbor]["weight"] = abs(G[node][neighbor]["weight"]-G_shortest[node][neighbor]["weight"])
+            G_diff_orig_bigger[node][neighbor]["weight"] = max(G[node][neighbor]["weight"]-G_shortest[node][neighbor]["weight"], 0)
 
-    for node in G_diff.nodes():
-        try:
-            G_diff.remove_edge(node, node)
-        except:
-            pass
+    G_diff_shortest_bigger = G.copy()
+    for node in G.nodes():
+        for neighbor in G.neighbors(node):
+            G_diff_shortest_bigger[node][neighbor]["weight"] = max(G_shortest[node][neighbor]["weight"]-G[node][neighbor]["weight"], 0)
 
-    return G_diff 
+    return G_diff_orig_bigger, G_diff_shortest_bigger 
     
 
 if __name__=="__main__":
@@ -218,6 +217,7 @@ if __name__=="__main__":
 
     hyperbolicPosition = positionFromHyperMap()
 
+    plt.figure()
     nx.draw(G, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
     plt.savefig('hyp-weighted-paths.png', dpi=1000)
 
@@ -236,25 +236,51 @@ if __name__=="__main__":
 
     hyperbolicPosition = positionFromHyperMap()
 
+    plt.figure()
     nx.draw(G_shortest, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
     plt.savefig('shortest-hyp-weighted-paths.png', dpi=1000)
 
-# Plot difference
+# Plot differences
 #--------------------------------------------------
-    G_diff = createDiffGraph(G, G_shortest)
-    edges, weights = zip(*nx.get_edge_attributes(G_diff, 'weight').items())
+    G_diff_orig_bigger, G_diff_shortest_bigger = createDiffGraphs(G, G_shortest)
+
+    edges, weights = zip(*nx.get_edge_attributes(G_diff_orig_bigger, 'weight').items())
     zipped = zip(weights, edges)
     zipped.sort()
     edges = [edge for (weight, edge) in zipped]
 
     print(weights)
 
-    weights = [max(0.1, 0.7*math.log(max(0.001, weight))) for (weight, edge) in zipped]
+    for weight, edge in zipped:
+        print(str(edge)+": "+str(weight))
+
+    weights = [max(0.01, 0.7*math.log(max(0.001, weight))) for (weight, edge) in zipped]
 
     hyperbolicPosition = positionFromHyperMap()
 
-    nx.draw(G_diff, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
-    plt.savefig('diff-hyp-weighted-paths.png', dpi=1000)
+    plt.figure()
+    nx.draw(G_diff_orig_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
+    plt.savefig('diff-orig-bigger-hyp-weighted-paths.png', dpi=1000)
+
+#----------------------------
+
+    edges, weights = zip(*nx.get_edge_attributes(G_diff_shortest_bigger, 'weight').items())
+    zipped = zip(weights, edges)
+    zipped.sort()
+    edges = [edge for (weight, edge) in zipped]
+
+    print(weights)
+
+    for weight, edge in zipped:
+        print(str(edge)+": "+str(weight))
+
+    weights = [max(0.01, 0.7*math.log(max(0.001, weight))) for (weight, edge) in zipped]
+
+    hyperbolicPosition = positionFromHyperMap()
+
+    plt.figure()
+    nx.draw(G_diff_shortest_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
+    plt.savefig('diff-shortest-bigger-hyp-weighted-paths.png', dpi=1000)
 
 
 #--------------------------------------------------
