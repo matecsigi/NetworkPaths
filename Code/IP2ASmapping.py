@@ -69,6 +69,8 @@ def createGraph(ipDict):
         except:
             pass
 
+    print("Original graph (nodes/edges): "+str(len(G.nodes()))+"/"+str(len(G.edges())))
+
     return G
 
 
@@ -146,6 +148,18 @@ def createShortestPathGraph(G, ipDict):
         for neighbor in G.neighbors(node):
             G_shortest[node][neighbor]["weight"] = 0
 
+
+    asEdgeAddedCounter = 0
+    G_AS = nx.read_gml("as-graph-2019-10-08.gml")
+    for node in G_shortest.nodes():
+        if G_AS.has_node(node):
+            for neighbor in G_AS.neighbors(node):
+                if G_shortest.has_node(neighbor) and not G_shortest.has_edge(node, neighbor):
+                    asEdgeAddedCounter += 1
+                    G_shortest.add_edge(node, neighbor, weight=0)
+    print("New edges added: "+str(asEdgeAddedCounter))
+    print("Total edges: "+str(len(G_shortest.edges()))+" -- "+str(len(G.edges())))
+
     shortestPathCounter = 0
 
     with open(fileName, 'r') as f:
@@ -174,18 +188,31 @@ def createShortestPathGraph(G, ipDict):
         except:
             pass
 
+    for node in G.nodes():
+        for neighbor in G.neighbors(node):
+            if G_shortest[node][neighbor]["weight"] == 0:
+                G_shortest.remove_edge(node, neighbor)
+
+    print("Shortest graph (nodes/edges): "+str(len(G_shortest.nodes()))+"/"+str(len(G_shortest.edges())))
+
     return G_shortest
 
 def createDiffGraphs(G, G_shortest):
     G_diff_orig_bigger = G.copy()
     for node in G.nodes():
         for neighbor in G.neighbors(node):
-            G_diff_orig_bigger[node][neighbor]["weight"] = max(G[node][neighbor]["weight"]-G_shortest[node][neighbor]["weight"], 0)
+            if G_shortest.has_edge(node, neighbor):
+                G_diff_orig_bigger[node][neighbor]["weight"] = max(G[node][neighbor]["weight"]-G_shortest[node][neighbor]["weight"], 0)
+            else:
+                G_diff_orig_bigger[node][neighbor]["weight"] = G[node][neighbor]["weight"]
 
-    G_diff_shortest_bigger = G.copy()
-    for node in G.nodes():
-        for neighbor in G.neighbors(node):
-            G_diff_shortest_bigger[node][neighbor]["weight"] = max(G_shortest[node][neighbor]["weight"]-G[node][neighbor]["weight"], 0)
+    G_diff_shortest_bigger = G_shortest.copy()
+    for node in G_shortest.nodes():
+        for neighbor in G_shortest.neighbors(node):
+            if G.has_edge(node, neighbor):
+                G_diff_shortest_bigger[node][neighbor]["weight"] = max(G_shortest[node][neighbor]["weight"]-G[node][neighbor]["weight"], 0)
+            else:
+                G_diff_shortest_bigger[node][neighbor]["weight"] = G_shortest[node][neighbor]["weight"]
 
     return G_diff_orig_bigger, G_diff_shortest_bigger 
     
@@ -208,8 +235,6 @@ if __name__=="__main__":
     zipped.sort()
     edges = [edge for (weight, edge) in zipped]
 
-    print(weights)
-
     weights = [max(0.1, 0.7*math.log(weight)) for (weight, edge) in zipped]
 
     #nx.draw(G, pos, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
@@ -221,6 +246,8 @@ if __name__=="__main__":
     nx.draw(G, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
     plt.savefig('hyp-weighted-paths.png', dpi=1000)
 
+    nx.write_gml(G, 'original-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
+
 
 # Plot shortest
 #--------------------------------------------------
@@ -230,15 +257,18 @@ if __name__=="__main__":
     zipped.sort()
     edges = [edge for (weight, edge) in zipped]
 
-    print(weights)
-
     weights = [max(0.1, 0.7*math.log(max(weight, 0.01))) for (weight, edge) in zipped]
+
+    d = dict(G_shortest.degree)
 
     hyperbolicPosition = positionFromHyperMap()
 
     plt.figure()
-    nx.draw(G_shortest, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
+    nx.draw(G_shortest, hyperbolicPosition, edgelist = edges, nodelist=d.keys(), node_color='b', node_size=[v * 0.75 for v in d.values()], width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
     plt.savefig('shortest-hyp-weighted-paths.png', dpi=1000)
+
+    nx.write_gml(G_shortest, 'shortest-path-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
+
 
 # Plot differences
 #--------------------------------------------------
@@ -248,11 +278,6 @@ if __name__=="__main__":
     zipped = zip(weights, edges)
     zipped.sort()
     edges = [edge for (weight, edge) in zipped]
-
-    print(weights)
-
-    for weight, edge in zipped:
-        print(str(edge)+": "+str(weight))
 
     weights = [max(0.01, 0.7*math.log(max(0.001, weight))) for (weight, edge) in zipped]
 
@@ -269,11 +294,6 @@ if __name__=="__main__":
     zipped.sort()
     edges = [edge for (weight, edge) in zipped]
 
-    print(weights)
-
-    for weight, edge in zipped:
-        print(str(edge)+": "+str(weight))
-
     weights = [max(0.01, 0.7*math.log(max(0.001, weight))) for (weight, edge) in zipped]
 
     hyperbolicPosition = positionFromHyperMap()
@@ -281,15 +301,3 @@ if __name__=="__main__":
     plt.figure()
     nx.draw(G_diff_shortest_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
     plt.savefig('diff-shortest-bigger-hyp-weighted-paths.png', dpi=1000)
-
-
-#--------------------------------------------------
-
-    nx.write_gml(G, 'original-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
-
-
-    for node in G.nodes():
-        for neighbor in G.neighbors(node):
-            if G_shortest[node][neighbor]["weight"] == 0:
-                G_shortest.remove_edge(node, neighbor)
-    nx.write_gml(G_shortest, 'shortest-path-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
