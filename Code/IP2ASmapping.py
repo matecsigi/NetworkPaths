@@ -6,8 +6,8 @@ import math
 import random
 import tqdm
 
-path = "/home/ec2-user/NetworkPaths/Data/TraceData/ams3-nl-2015/"
-fileName = path+"daily.l7.t1.c003736.20150102.ams3-nl-DECODED.txt"
+sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/ath-gr-2015/"
+fileName = sourcePath+"daily.l7.t1.c003736.20150102.ath-gr-DECODED.txt"
 
 mappingFile = "../Data/routeviews-rv2-20150102-1200.pfx2as"
 
@@ -19,7 +19,7 @@ def generatePosition(distance):
 
 def positionFromHyperMap():
     position = {}
-    with open(path+"coordinates_embedding.txt", "r") as f:
+    with open(sourcePath+"coordinates_embedding.txt", "r") as f:
         for line in f:
             splitLine = line.split()
             angle = float(splitLine[1])
@@ -107,7 +107,7 @@ def createIP2AsMapping():
                         if node not in nodeList:
                             nodeList.append(node)
 
-    fOut = open(path+"ip2AsMappings.txt", "w")
+    fOut = open(sourcePath+"ip2AsMappings.txt", "w")
     with open(mappingFile, 'r') as f:
         for line in tqdm.tqdm(f):
             splitList = line.split()
@@ -136,7 +136,7 @@ def createIP2AsMapping():
 
 def createIP2AsDict():
     ip2AsDict = {}
-    with open(path+"ip2AsMappings.txt", "r") as f:
+    with open(sourcePath+"ip2AsMappings.txt", "r") as f:
         for line in f:
             splitLine = line.split()
             ip2AsDict[splitLine[0]] = splitLine[1]
@@ -218,10 +218,10 @@ def createDiffGraphs(G, G_shortest):
     
 
 if __name__=="__main__":
-    # createIP2AsMapping();
+    createIP2AsMapping();
     ip2AsDict = createIP2AsDict()
     G = createGraph(ip2AsDict)
-    nx.write_edgelist(G, path+"edgelist.txt")
+    nx.write_edgelist(G, sourcePath+"edgelist.txt")
 
 # Plot original
 #---------------------------------------------------------
@@ -244,9 +244,9 @@ if __name__=="__main__":
 
     plt.figure()
     nx.draw(G, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
-    plt.savefig(path+'hyp-weighted-paths.png', dpi=1000)
+    plt.savefig(sourcePath+'hyp-weighted-paths.png', dpi=1000)
 
-    nx.write_gml(G, path+'original-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
+    nx.write_gml(G, sourcePath+'original-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
 
 
 # Plot shortest
@@ -265,9 +265,9 @@ if __name__=="__main__":
 
     plt.figure()
     nx.draw(G_shortest, hyperbolicPosition, edgelist = edges, nodelist=d.keys(), node_color='b', node_size=[v * 0.75 for v in d.values()], width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
-    plt.savefig(path+'shortest-hyp-weighted-paths.png', dpi=1000)
+    plt.savefig(sourcePath+'shortest-hyp-weighted-paths.png', dpi=1000)
 
-    nx.write_gml(G_shortest, path+'shortest-path-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
+    nx.write_gml(G_shortest, sourcePath+'shortest-path-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
 
 
 # Plot differences
@@ -285,7 +285,7 @@ if __name__=="__main__":
 
     plt.figure()
     nx.draw(G_diff_orig_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
-    plt.savefig(path+'diff-orig-bigger-hyp-weighted-paths.png', dpi=1000)
+    plt.savefig(sourcePath+'diff-orig-bigger-hyp-weighted-paths.png', dpi=1000)
 
 #----------------------------
 
@@ -300,4 +300,4 @@ if __name__=="__main__":
 
     plt.figure()
     nx.draw(G_diff_shortest_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
-    plt.savefig(path+'diff-shortest-bigger-hyp-weighted-paths.png', dpi=1000)
+    plt.savefig(sourcePath+'diff-shortest-bigger-hyp-weighted-paths.png', dpi=1000)
