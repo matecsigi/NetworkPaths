@@ -6,8 +6,8 @@ import math
 import random
 import tqdm
 
-sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/bcn-es-2015/"
-fileName = sourcePath+"daily.l7.t1.c003736.20150102.bcn-es-DECODED.txt"
+sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/ams3-nl-2015/"
+fileName = sourcePath+"daily.l7.t1.c003736.20150102.ams3-nl-DECODED.txt"
 
 mappingFile = "../Data/routeviews-rv2-20150102-1200.pfx2as"
 
@@ -45,7 +45,7 @@ def createGraph(ipDict):
                 try:
                     sourceNode = ipDict[sourceIP]
                 except Exception as e:
-                    print(str(e))
+                    # print(str(e))
                     continue
                 destIP = splitList[2]
                 path = splitList[13:]
@@ -180,7 +180,8 @@ def createShortestPathGraph(G, ipDict):
                         G_shortest[source][dest]["weight"] = G_shortest[source][dest]["weight"]+1
                     shortestPathCounter += 1
                 except Exception as e:
-                    print("Error:"+str(e))
+                    # print("Error:"+str(e))
+                    pass
 
     print("Shortest path counter: "+str(shortestPathCounter))
 
@@ -261,7 +262,7 @@ def calculateEntropyReal(ipDict):
                                 nodeTable[source] = {}
                             nodeTable[source][dest] = nextAs
                 except Exception as e:
-                    print("Exception: "+str(e))
+                    # print("Exception: "+str(e))
                     pass
 
     print(len(nodeTable.keys()))
@@ -320,7 +321,7 @@ def calculateEntropyShortest(ipDict, Gr_shortest):
                                 nodeTable[source] = {}
                             nodeTable[source][dest] = nextAs
                 except Exception as e:
-                    print("Exception: "+str(e))
+                    # print("Exception: "+str(e))
                     pass
 
     print(len(nodeTable.keys()))
@@ -357,6 +358,18 @@ def normalizeList(listNotNormed):
     for element in listNotNormed:
         listNormed.append(float(element)/sum)
     return listNormed
+
+def edgeWeightAnalysis(Gr):
+    sourceList = []
+    targetList = []
+    weightList = []
+    for edge in Gr.edges():
+        sourceList.append(edge[0])
+        targetList.append(edge[1])
+        weightList.append(Gr[edge[0]][edge[1]]["weight"])
+    sortedEdges = [[x,y,z] for z,x,y in sorted(zip(weightList,sourceList,targetList),reverse=True)]
+    for i in range(10):
+        print(sortedEdges[i])
 
 
 if __name__=="__main__":
@@ -421,6 +434,12 @@ if __name__=="__main__":
 # Plot differences
 #--------------------------------------------------
     G_diff_orig_bigger, G_diff_shortest_bigger = createDiffGraphs(G, G_shortest)
+
+    print("Orig bigger edges: ")
+    edgeWeightAnalysis(G_diff_orig_bigger)
+
+    print("Shortest bigger edges: ")
+    edgeWeightAnalysis(G_diff_shortest_bigger)
 
     edges, weights = zip(*nx.get_edge_attributes(G_diff_orig_bigger, 'weight').items())
     zipped = zip(weights, edges)
