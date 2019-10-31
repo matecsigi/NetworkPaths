@@ -6,8 +6,8 @@ import math
 import random
 import tqdm
 
-sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/ath-gr-2015/"
-fileName = sourcePath+"daily.l7.t1.c003736.20150102.ath-gr-DECODED.txt"
+sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/bcn-es-2015/"
+fileName = sourcePath+"daily.l7.t1.c003736.20150102.bcn-es-DECODED.txt"
 
 mappingFile = "../Data/routeviews-rv2-20150102-1200.pfx2as"
 
@@ -34,7 +34,6 @@ def createGraph(ipDict):
     global sourceNode
     sourceNode = -1
 
-
     graphPathCounter = 0
 
     G = nx.DiGraph()
@@ -43,7 +42,11 @@ def createGraph(ipDict):
             splitList = line.split()
             if splitList[0] == 'T' and splitList[12] == 'C':
                 sourceIP = splitList[1]
-                sourceNode = ipDict[sourceIP]
+                try:
+                    sourceNode = ipDict[sourceIP]
+                except Exception as e:
+                    print(str(e))
+                    continue
                 destIP = splitList[2]
                 path = splitList[13:]
                 for i in range(len(path)):
@@ -88,7 +91,6 @@ def prefixMatchLength(ipBinary1, ipBinary2):
 
 
 def createIP2AsMapping():
-
     nodeList = []
     with open(fileName, 'r') as f:
         for line in f:
@@ -215,13 +217,155 @@ def createDiffGraphs(G, G_shortest):
                 G_diff_shortest_bigger[node][neighbor]["weight"] = G_shortest[node][neighbor]["weight"]
 
     return G_diff_orig_bigger, G_diff_shortest_bigger 
+
+def calculateEntropyOld(Gr):
+    entropy = 0
+    for node in Gr.nodes():
+        neighborProbList = []
+        for neighbor in Gr.neighbors(node):
+            if Gr[node][neighbor]["weight"] != 0:
+                neighborProbList.append(Gr[node][neighbor]["weight"])
+        neighborProbList = normalizeList(neighborProbList)
+        print(neighborProbList)
+        nodeEntropy = -sum([p*math.log(p, 2) for p in neighborProbList])
+        print(nodeEntropy)
+        entropy += nodeEntropy
+
+    entropy = float(entropy)/len(Gr.nodes())
+    return entropy
     
 
+def calculateEntropyReal(ipDict):
+    nodeTable = {}
+
+    with open(fileName, 'r') as f:
+        for line in f:
+            splitList = line.split()
+            if splitList[0] == 'T' and splitList[12] == 'C':
+                sourceIP = splitList[1]
+                destIP = splitList[2]
+                path = splitList[13:]
+                for i in range(len(path)):
+                    path[i] = path[i].split(",")[0]
+                pathIP = [sourceIP]+path+[destIP]
+                try:
+                    pathAS = [ipDict[i] for i in pathIP]
+                    for k in range(len(pathAS)-1):
+                        source = pathAS[k]
+                        nextAs = pathAS[k+1]
+                        # print(str(source + "->"+str(nextAs)))
+                        for j in range(k+1, len(pathAS)-1):
+                            dest = pathAS[j]
+                            # print(str(source + "->"+str(nextAs)+"->"+str(dest)))
+                            if not source in nodeTable:
+                                nodeTable[source] = {}
+                            nodeTable[source][dest] = nextAs
+                except Exception as e:
+                    print("Exception: "+str(e))
+                    pass
+
+    print(len(nodeTable.keys()))
+
+    valueCounter = 0
+    for nodeKey in nodeTable.keys():
+        valueCounter += len(nodeTable[nodeKey].keys())
+    print("Node table percentage: "+str(100*float(valueCounter)/(len(nodeTable.keys())*len(nodeTable.keys())))+"%")
+
+    # print(nodeTable)
+
+    entropy = 0
+    for source, nextHopDict in nodeTable.iteritems():
+        nodeOccurrenceList = []
+        for key, value in nextHopDict.iteritems():
+            nodeOccurrenceList.append(value)
+        # print(nodeOccurrenceList)
+        nodeProbList = [nodeOccurrenceList.count(x) for x in set(nodeOccurrenceList)]
+        # print(nodeProbList)
+        nodeProbList = normalizeList(nodeProbList)
+        # print(nodeProbList)
+        nodeEntropy = -sum([p*math.log(p, 2) for p in nodeProbList])
+        # print(nodeEntropy)
+        entropy += nodeEntropy
+    entropy = float(entropy)/len(nodeTable.keys())
+    return entropy
+
+
+def calculateEntropyShortest(ipDict, Gr_shortest):
+    nodeTable = {}
+
+    with open(fileName, 'r') as f:
+        for line in f:
+            splitList = line.split()
+            if splitList[0] == 'T' and splitList[12] == 'C':
+                sourceIP = splitList[1]
+                destIP = splitList[2]
+                path = splitList[13:]
+                for i in range(len(path)):
+                    path[i] = path[i].split(",")[0]
+                pathIP = [sourceIP]+path+[destIP]
+                try:
+                    pathAS = [ipDict[i] for i in pathIP]
+                    for k in range(len(pathAS)-1):
+                        source = pathAS[k]
+                        for j in range(k+1, len(pathAS)-1):
+                            dest = pathAS[j]
+                            shortest_path = nx.shortest_path(Gr_shortest, source, dest, weight=None)
+                            if not len(shortest_path) > 1:
+                                nextAs = shortest_path[0]
+                            else:
+                                nextAs = shortest_path[1]
+                            # print(str(source)+"->"+str(dest)+" :: "+str(nextAs))
+                            # print(shortest_path)
+                            if not source in nodeTable:
+                                nodeTable[source] = {}
+                            nodeTable[source][dest] = nextAs
+                except Exception as e:
+                    print("Exception: "+str(e))
+                    pass
+
+    print(len(nodeTable.keys()))
+    valueCounter = 0
+    for nodeKey in nodeTable.keys():
+        valueCounter += len(nodeTable[nodeKey].keys())
+    print("Node table percentage: "+str(100*float(valueCounter)/(len(nodeTable.keys())*len(nodeTable.keys())))+"%")
+
+    # print(nodeTable)
+
+    entropy = 0
+    for source, nextHopDict in nodeTable.iteritems():
+        nodeOccurrenceList = []
+        for key, value in nextHopDict.iteritems():
+            nodeOccurrenceList.append(value)
+        # print(nodeOccurrenceList)
+        nodeProbList = [nodeOccurrenceList.count(x) for x in set(nodeOccurrenceList)]
+        # print(nodeProbList)
+        nodeProbList = normalizeList(nodeProbList)
+        # print(nodeProbList)
+        nodeEntropy = -sum([p*math.log(p, 2) for p in nodeProbList])
+        # print(nodeEntropy)
+        entropy += nodeEntropy
+    entropy = float(entropy)/len(nodeTable.keys())
+    return entropy
+
+
+def normalizeList(listNotNormed):
+    # print(listNotNormed)
+    sum = 0
+    for element in listNotNormed:
+        sum += element
+    listNormed = []
+    for element in listNotNormed:
+        listNormed.append(float(element)/sum)
+    return listNormed
+
+
 if __name__=="__main__":
-    createIP2AsMapping();
+    #createIP2AsMapping();
     ip2AsDict = createIP2AsDict()
     G = createGraph(ip2AsDict)
     nx.write_edgelist(G, sourcePath+"edgelist.txt")
+
+    print("Real entropy: "+str(calculateEntropyReal(ip2AsDict)))
 
 # Plot original
 #---------------------------------------------------------
@@ -235,7 +379,7 @@ if __name__=="__main__":
     zipped.sort()
     edges = [edge for (weight, edge) in zipped]
 
-    weights = [max(0.1, 0.7*math.log(weight)) for (weight, edge) in zipped]
+    weights = [max(0.05, 0.4*math.log(weight)) for (weight, edge) in zipped]
 
     #nx.draw(G, pos, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
     #plt.savefig('weightes-paths.png', dpi=1000)
@@ -252,19 +396,23 @@ if __name__=="__main__":
 # Plot shortest
 #--------------------------------------------------
     G_shortest = createShortestPathGraph(G, ip2AsDict)
+    print("Shortest entropy: "+str(calculateEntropyShortest(ip2AsDict, G_shortest)))
+
     edges, weights = zip(*nx.get_edge_attributes(G_shortest, 'weight').items())
     zipped = zip(weights, edges)
     zipped.sort()
     edges = [edge for (weight, edge) in zipped]
 
-    weights = [max(0.1, 0.7*math.log(max(weight, 0.01))) for (weight, edge) in zipped]
+    weights = [max(0.05, 0.4*math.log(max(weight, 0.01))) for (weight, edge) in zipped]
 
     d = dict(G_shortest.degree)
 
     hyperbolicPosition = positionFromHyperMap()
 
     plt.figure()
-    nx.draw(G_shortest, hyperbolicPosition, edgelist = edges, nodelist=d.keys(), node_color='b', node_size=[v * 0.75 for v in d.values()], width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
+#    nx.draw(G_shortest, hyperbolicPosition, edgelist = edges, nodelist=d.keys(), node_color='b', node_size=[v * 0.75 for v in d.values()], width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
+    nx.draw(G_shortest, hyperbolicPosition, edgelist = edges, nodelist=d.keys(), node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
+
     plt.savefig(sourcePath+'shortest-hyp-weighted-paths.png', dpi=1000)
 
     nx.write_gml(G_shortest, sourcePath+'shortest-path-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
@@ -279,7 +427,7 @@ if __name__=="__main__":
     zipped.sort()
     edges = [edge for (weight, edge) in zipped]
 
-    weights = [max(0.01, 0.7*math.log(max(0.001, weight))) for (weight, edge) in zipped]
+    weights = [max(0.01, 0.4*math.log(max(0.001, weight))) for (weight, edge) in zipped]
 
     hyperbolicPosition = positionFromHyperMap()
 
@@ -294,7 +442,7 @@ if __name__=="__main__":
     zipped.sort()
     edges = [edge for (weight, edge) in zipped]
 
-    weights = [max(0.01, 0.7*math.log(max(0.001, weight))) for (weight, edge) in zipped]
+    weights = [max(0.01, 0.4*math.log(max(0.001, weight))) for (weight, edge) in zipped]
 
     hyperbolicPosition = positionFromHyperMap()
 
