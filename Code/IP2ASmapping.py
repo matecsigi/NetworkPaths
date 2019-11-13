@@ -6,8 +6,8 @@ import math
 import random
 import tqdm
 
-sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/ams3-nl-2015/"
-fileName = sourcePath+"daily.l7.t1.c003736.20150102.ams3-nl-DECODED.txt"
+sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/san-us-2015/"
+fileName = sourcePath+"daily.l7.t1.c003736.20150102.san-us-DECODED.txt"
 
 mappingFile = "../Data/routeviews-rv2-20150102-1200.pfx2as"
 
@@ -288,7 +288,7 @@ def calculateEntropyReal(ipDict):
         # print(nodeEntropy)
         entropy += nodeEntropy
     entropy = float(entropy)/len(nodeTable.keys())
-    return entropy
+    return nodeTable
 
 
 def calculateEntropyShortest(ipDict, Gr_shortest):
@@ -346,7 +346,7 @@ def calculateEntropyShortest(ipDict, Gr_shortest):
         # print(nodeEntropy)
         entropy += nodeEntropy
     entropy = float(entropy)/len(nodeTable.keys())
-    return entropy
+    return nodeTable
 
 
 def normalizeList(listNotNormed):
@@ -371,14 +371,33 @@ def edgeWeightAnalysis(Gr):
     for i in range(10):
         print(sortedEdges[i])
 
+def analyzeNodeTable(nodeTableReal, nodeTableShortest):
+    for key, nextHopDict in nodeTableReal.iteritems():
+        nodeOccurrenceListReal = []
+        for key2, value2 in nextHopDict.iteritems():
+            nodeOccurrenceListReal.append(value2)
+        nodeProbList = [nodeOccurrenceListReal.count(x) for x in set(nodeOccurrenceListReal)]
+        nodeProbList = normalizeList(nodeProbList)
+        nodeEntropy = -sum([p*math.log(p, 2) for p in nodeProbList])
+        print(str(nodeProbList)+" -> "+str(nodeEntropy))
+        nodeOccurrenceListShortest = []
+        nextHopDictShortest = nodeTableShortest[key]
+        for key2, value2 in nextHopDictShortest.iteritems():
+            nodeOccurrenceListShortest.append(value2)
+        nodeProbList = [nodeOccurrenceListShortest.count(x) for x in set(nodeOccurrenceListShortest)]
+        nodeProbList = normalizeList(nodeProbList)
+        nodeEntropy = -sum([p*math.log(p, 2) for p in nodeProbList])
+        print(str(nodeProbList)+" -> "+str(nodeEntropy))
+
+        print("---------------------")
+
 
 if __name__=="__main__":
-    #createIP2AsMapping();
+    createIP2AsMapping();
     ip2AsDict = createIP2AsDict()
     G = createGraph(ip2AsDict)
     nx.write_edgelist(G, sourcePath+"edgelist.txt")
-
-    print("Real entropy: "+str(calculateEntropyReal(ip2AsDict)))
+    print("edgelist written")
 
 # Plot original
 #---------------------------------------------------------
@@ -409,7 +428,10 @@ if __name__=="__main__":
 # Plot shortest
 #--------------------------------------------------
     G_shortest = createShortestPathGraph(G, ip2AsDict)
-    print("Shortest entropy: "+str(calculateEntropyShortest(ip2AsDict, G_shortest)))
+    nodeTableReal = calculateEntropyReal(ip2AsDict)
+    nodeTableShortest = calculateEntropyShortest(ip2AsDict, G_shortest)
+
+    # analyzeNodeTable(nodeTableReal, nodeTableShortest)
 
     edges, weights = zip(*nx.get_edge_attributes(G_shortest, 'weight').items())
     zipped = zip(weights, edges)
