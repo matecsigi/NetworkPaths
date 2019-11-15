@@ -6,8 +6,8 @@ import math
 import random
 import tqdm
 
-sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/san-us-2015/"
-fileName = sourcePath+"daily.l7.t1.c003736.20150102.san-us-DECODED.txt"
+sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/syd-au-2015/"
+fileName = sourcePath+"daily.l7.t1.c003736.20150102.syd-au-DECODED.txt"
 
 mappingFile = "../Data/routeviews-rv2-20150102-1200.pfx2as"
 
@@ -195,6 +195,36 @@ def createShortestPathGraph(G, ipDict):
         for neighbor in G.neighbors(node):
             if G_shortest[node][neighbor]["weight"] == 0:
                 G_shortest.remove_edge(node, neighbor)
+
+    removeList = []
+    for node in G_shortest.nodes():
+        for neighbor in G_shortest.neighbors(node):
+            if G_shortest[node][neighbor]["weight"] == 0:
+                removeList.append((node, neighbor))
+
+    print(len(removeList))
+    for e in removeList:
+        G_shortest.remove_edge(e[0], e[1])
+
+    print("Shortest graph (nodes/edges): "+str(len(G_shortest.nodes()))+"/"+str(len(G_shortest.edges())))
+
+    neighborListReal = []
+    for neighbor in G.neighbors(sourceAs):
+        neighborListReal.append(G[sourceAs][neighbor]["weight"])
+    realProbList = normalizeList(neighborListReal)
+    realEntropy = -sum([p*math.log(p, 2) for p in realProbList])
+    print("neighborListReal: "+str(neighborListReal))
+    print("New real entropy: "+str(realEntropy))
+
+    neighborListShortest = []
+    for neighbor in G_shortest.neighbors(sourceAs):
+        neighborListShortest.append(G_shortest[sourceAs][neighbor]["weight"])
+    print(neighborListShortest)
+    shortestProbList = normalizeList(neighborListShortest)
+    shortestEntropy = -sum([p*math.log(p, 2) for p in shortestProbList])
+    print("neighborListShortest: "+str(neighborListShortest))
+    print("New shortest entropy: "+str(shortestEntropy))
+
 
     print("Shortest graph (nodes/edges): "+str(len(G_shortest.nodes()))+"/"+str(len(G_shortest.edges())))
 
