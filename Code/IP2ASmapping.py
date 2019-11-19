@@ -6,8 +6,8 @@ import math
 import random
 import tqdm
 
-sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/syd-au-2015/"
-fileName = sourcePath+"daily.l7.t1.c003736.20150102.syd-au-DECODED.txt"
+sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/bcn-es-2015/"
+fileName = sourcePath+"daily.l7.t1.c003736.20150102.bcn-es-DECODED.txt"
 
 mappingFile = "../Data/routeviews-rv2-20150102-1200.pfx2as"
 
@@ -421,9 +421,16 @@ def analyzeNodeTable(nodeTableReal, nodeTableShortest):
 
         print("---------------------")
 
+def filterEdges(G, limit):
+    G_filtered = nx.DiGraph()
+    for edge in G.edges():
+        if G[edge[0]][edge[1]]["weight"] > limit:
+            G_filtered.add_edge(edge[0], edge[1], weight=G[edge[0]][edge[1]]["weight"])
+    return G_filtered
+
 
 if __name__=="__main__":
-    createIP2AsMapping();
+    # createIP2AsMapping();
     ip2AsDict = createIP2AsDict()
     G = createGraph(ip2AsDict)
     nx.write_edgelist(G, sourcePath+"edgelist.txt")
@@ -435,6 +442,8 @@ if __name__=="__main__":
     for node in G.nodes():
         distance = nx.shortest_path_length(G, sourceNode, node)
         pos[node] = generatePosition(distance)
+
+    #G = filterEdges(G, 50)
 
     edges, weights = zip(*nx.get_edge_attributes(G, 'weight').items())
     zipped = zip(weights, edges)
@@ -449,7 +458,7 @@ if __name__=="__main__":
     hyperbolicPosition = positionFromHyperMap()
 
     plt.figure()
-    nx.draw(G, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
+    nx.draw(G, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
     plt.savefig(sourcePath+'hyp-weighted-paths.png', dpi=1000)
 
     nx.write_gml(G, sourcePath+'original-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
@@ -493,6 +502,8 @@ if __name__=="__main__":
     print("Shortest bigger edges: ")
     edgeWeightAnalysis(G_diff_shortest_bigger)
 
+    G_diff_orig_bigger = filterEdges(G_diff_orig_bigger, 50)
+
     edges, weights = zip(*nx.get_edge_attributes(G_diff_orig_bigger, 'weight').items())
     zipped = zip(weights, edges)
     zipped.sort()
@@ -503,10 +514,12 @@ if __name__=="__main__":
     hyperbolicPosition = positionFromHyperMap()
 
     plt.figure()
-    nx.draw(G_diff_orig_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
+    nx.draw(G_diff_orig_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=False, font_size=2)
     plt.savefig(sourcePath+'diff-orig-bigger-hyp-weighted-paths.png', dpi=1000)
 
 #----------------------------
+
+    G_diff_shortest_bigger = filterEdges(G_diff_shortest_bigger, 50)
 
     edges, weights = zip(*nx.get_edge_attributes(G_diff_shortest_bigger, 'weight').items())
     zipped = zip(weights, edges)
@@ -518,5 +531,5 @@ if __name__=="__main__":
     hyperbolicPosition = positionFromHyperMap()
 
     plt.figure()
-    nx.draw(G_diff_shortest_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
+    nx.draw(G_diff_shortest_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=False, font_size=2)
     plt.savefig(sourcePath+'diff-shortest-bigger-hyp-weighted-paths.png', dpi=1000)
