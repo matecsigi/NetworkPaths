@@ -6,8 +6,8 @@ import math
 import random
 import tqdm
 
-sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/bcn-es-2015/"
-fileName = sourcePath+"daily.l7.t1.c003736.20150102.bcn-es-DECODED.txt"
+sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/ams3-nl-2015/"
+fileName = sourcePath+"daily.l7.t1.c003736.20150102.ams3-nl-DECODED.txt"
 
 mappingFile = "../Data/routeviews-rv2-20150102-1200.pfx2as"
 
@@ -163,6 +163,8 @@ def createShortestPathGraph(G, ipDict):
     print("Total edges: "+str(len(G_shortest.edges()))+" -- "+str(len(G.edges())))
 
     shortestPathCounter = 0
+    realSum = 0
+    shortestSum = 0
 
     with open(fileName, 'r') as f:
         for line in f:
@@ -170,18 +172,34 @@ def createShortestPathGraph(G, ipDict):
             if splitList[0] == 'T' and splitList[12] == 'C':
                 sourceIP = splitList[1]
                 destIP = splitList[2]
+                path = splitList[13:]
+                for i in range(len(path)):
+                    path[i] = path[i].split(",")[0]
+                pathIP = [sourceIP]+path+[destIP]
                 try:
                     sourceAs = ipDict[sourceIP]
                     destAs = ipDict[destIP]
+                    pathAS = [ipDict[i] for i in pathIP]
                     shortestPath = nx.shortest_path(G_shortest, sourceAs, destAs, weight=None)
+                    realSum += len(list(set(pathAS)))
+                    shortestSum += len(shortestPath)
+                    if len(shortestPath)+2 < len(list(set(pathAS))):
+                        print("shortest: "+str(shortestPath))
+                        print("original: "+str(pathAS))
+                        print("original: "+str(list(set(pathAS))))
+                        print("-------------------")
                     for i in range(len(shortestPath)-1):
                         source = shortestPath[i]
                         dest = shortestPath[i+1]
                         G_shortest[source][dest]["weight"] = G_shortest[source][dest]["weight"]+1
                     shortestPathCounter += 1
                 except Exception as e:
-                    # print("Error:"+str(e))
+                    #print("Error:"+str(e))
                     pass
+
+    print("Real average path length: "+str(float(realSum)/shortestPathCounter))
+    print("Shortest average path length: "+str(float(shortestSum)/shortestPathCounter))
+
 
     print("Shortest path counter: "+str(shortestPathCounter))
 
@@ -502,7 +520,7 @@ if __name__=="__main__":
     print("Shortest bigger edges: ")
     edgeWeightAnalysis(G_diff_shortest_bigger)
 
-    G_diff_orig_bigger = filterEdges(G_diff_orig_bigger, 50)
+    G_diff_orig_bigger = filterEdges(G_diff_orig_bigger, 5)
 
     edges, weights = zip(*nx.get_edge_attributes(G_diff_orig_bigger, 'weight').items())
     zipped = zip(weights, edges)
@@ -514,12 +532,12 @@ if __name__=="__main__":
     hyperbolicPosition = positionFromHyperMap()
 
     plt.figure()
-    nx.draw(G_diff_orig_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=False, font_size=2)
+    nx.draw(G_diff_orig_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
     plt.savefig(sourcePath+'diff-orig-bigger-hyp-weighted-paths.png', dpi=1000)
 
 #----------------------------
 
-    G_diff_shortest_bigger = filterEdges(G_diff_shortest_bigger, 50)
+    G_diff_shortest_bigger = filterEdges(G_diff_shortest_bigger, 5)
 
     edges, weights = zip(*nx.get_edge_attributes(G_diff_shortest_bigger, 'weight').items())
     zipped = zip(weights, edges)
@@ -531,5 +549,5 @@ if __name__=="__main__":
     hyperbolicPosition = positionFromHyperMap()
 
     plt.figure()
-    nx.draw(G_diff_shortest_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=False, font_size=2)
+    nx.draw(G_diff_shortest_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
     plt.savefig(sourcePath+'diff-shortest-bigger-hyp-weighted-paths.png', dpi=1000)
