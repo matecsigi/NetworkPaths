@@ -1,6 +1,6 @@
 import networkx as nx
 
-fileName = "../Data/daily.l7.t1.c006274.20180101.anc-us.warts-DECODED.txt"
+fileName = "../Data/TraceData/san-us-2015/daily.l7.t1.c003736.20150102.san-us-DECODED.txt"
 
 sourceNode = -1
 
@@ -8,7 +8,7 @@ G = nx.DiGraph()
 with open(fileName, 'r') as f:
     for line in f:
         splitList = line.split()
-        if splitList[0] == 'T':
+        if splitList[0] == 'T' and splitList[12] == 'C':
             sourceIP = splitList[1]
             sourceNode = sourceIP
             destIP = splitList[2]
@@ -31,7 +31,7 @@ sumShortestPathLength = 0
 with open(fileName, 'r') as f:
     for line in f:
         splitList = line.split()
-        if splitList[0] == 'T':
+        if splitList[0] == 'T' and splitList[12] == 'C':
             nrOfPaths = nrOfPaths+1
             sourceIP = splitList[1]
             sourceNode = sourceIP

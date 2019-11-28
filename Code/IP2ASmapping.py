@@ -6,8 +6,8 @@ import math
 import random
 import tqdm
 
-sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/ams3-nl-2015/"
-fileName = sourcePath+"daily.l7.t1.c003736.20150102.ams3-nl-DECODED.txt"
+sourcePath = "/home/ec2-user/NetworkPaths/Data/TraceData/syd-au-2015/"
+fileName = sourcePath+"daily.l7.t1.c003736.20150102.syd-au-DECODED.txt"
 
 mappingFile = "../Data/routeviews-rv2-20150102-1200.pfx2as"
 
@@ -183,7 +183,7 @@ def createShortestPathGraph(G, ipDict):
                     shortestPath = nx.shortest_path(G_shortest, sourceAs, destAs, weight=None)
                     realSum += len(list(set(pathAS)))
                     shortestSum += len(shortestPath)
-                    if len(shortestPath)+2 < len(list(set(pathAS))):
+                    if len(shortestPath)+1 < len(list(set(pathAS))):
                         print("shortest: "+str(shortestPath))
                         print("original: "+str(pathAS))
                         print("original: "+str(list(set(pathAS))))
