@@ -447,6 +447,29 @@ def filterEdges(G, limit):
     return G_filtered
 
 
+def plotEdgeWeightDistribution(G, G_shortest, name):
+    edgeWeightList = []
+    for node in G.nodes():
+        for neighbor in G.neighbors(node):
+            if G[node][neighbor]["weight"] > 10 and  G[node][neighbor]["weight"] < 500:
+                edgeWeightList.append(G[node][neighbor]["weight"])
+
+    edgeWeightListShortest = []
+    for node in G_shortest.nodes():
+        for neighbor in G_shortest.neighbors(node):
+            if G_shortest[node][neighbor]["weight"] > 10 and  G_shortest[node][neighbor]["weight"] < 500:
+                edgeWeightListShortest.append(G_shortest[node][neighbor]["weight"])
+
+    print("Edge weights:")
+    print(edgeWeightList)
+    plt.figure()
+    plt.hist(edgeWeightList, bins=10, color='b', alpha=0.5)
+    plt.hist(edgeWeightListShortest, bins=10, color="r", alpha=0.5)
+    plt.xlabel("Edge weight")
+    plt.ylabel("Number of edges")
+    plt.savefig(name+'-edge-weight-distribution.png', dpi=1000)
+
+
 if __name__=="__main__":
     # createIP2AsMapping();
     ip2AsDict = createIP2AsDict()
@@ -463,6 +486,8 @@ if __name__=="__main__":
 
     #G = filterEdges(G, 50)
 
+    #plotEdgeWeightDistribution(G, "orig")
+
     edges, weights = zip(*nx.get_edge_attributes(G, 'weight').items())
     zipped = zip(weights, edges)
     zipped.sort()
@@ -476,7 +501,8 @@ if __name__=="__main__":
     hyperbolicPosition = positionFromHyperMap()
 
     plt.figure()
-    nx.draw(G, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
+    nx.draw(G, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=False, font_size=2)
+    plt.axis('equal')
     plt.savefig(sourcePath+'hyp-weighted-paths.png', dpi=1000)
 
     nx.write_gml(G, sourcePath+'original-graph-'+str(datetime.datetime.today().strftime('%Y-%m-%d'))+".gml")
@@ -489,6 +515,7 @@ if __name__=="__main__":
     nodeTableShortest = calculateEntropyShortest(ip2AsDict, G_shortest)
 
     # analyzeNodeTable(nodeTableReal, nodeTableShortest)
+    plotEdgeWeightDistribution(G, G_shortest, "mixed")
 
     edges, weights = zip(*nx.get_edge_attributes(G_shortest, 'weight').items())
     zipped = zip(weights, edges)
@@ -504,6 +531,7 @@ if __name__=="__main__":
     plt.figure()
 #    nx.draw(G_shortest, hyperbolicPosition, edgelist = edges, nodelist=d.keys(), node_color='b', node_size=[v * 0.75 for v in d.values()], width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
     nx.draw(G_shortest, hyperbolicPosition, edgelist = edges, nodelist=d.keys(), node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1)
+    plt.axis('equal')
 
     plt.savefig(sourcePath+'shortest-hyp-weighted-paths.png', dpi=1000)
 
@@ -532,7 +560,8 @@ if __name__=="__main__":
     hyperbolicPosition = positionFromHyperMap()
 
     plt.figure()
-    nx.draw(G_diff_orig_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
+    nx.draw(G_diff_orig_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=False, font_size=2)
+    plt.axis('equal')
     plt.savefig(sourcePath+'diff-orig-bigger-hyp-weighted-paths.png', dpi=1000)
 
 #----------------------------
@@ -549,5 +578,6 @@ if __name__=="__main__":
     hyperbolicPosition = positionFromHyperMap()
 
     plt.figure()
-    nx.draw(G_diff_shortest_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=True, font_size=2)
+    nx.draw(G_diff_shortest_bigger, hyperbolicPosition, edgelist = edges, node_color='b', node_size=5, width=weights, edge_color=weights, edge_cmap=plt.cm.autumn, edge_vmin=1, with_labels=False, font_size=2)
+    plt.axis('equal')
     plt.savefig(sourcePath+'diff-shortest-bigger-hyp-weighted-paths.png', dpi=1000)
